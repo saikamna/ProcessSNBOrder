@@ -1,0 +1,709 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="ProcessSNBOrderSecondPartIn-2_0" onError="ProcessSNBOrderFault-2_0" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+<log level="custom">
+		<property
+			expression="fn:concat('Inside ProcessSNBOrderSecondPartIn-2_0 cor-id:',get-property('operation','correlationId'))"
+			name="LogText" xmlns:ns="http://org.apache.synapse/xsd" />
+		<property
+			expression="get-property(&quot;SYSTEM_DATE&quot;, &quot;yyyy.MM.dd 'at' HH:mm:ss z&quot;)"
+			name="TimeStamp" xmlns:ns="http://org.apache.synapse/xsd" />
+	</log>
+	<property expression="$body/*" name="tempStructure" scope="default"
+		type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+	<payloadFactory media-type="xml">
+		<format>
+			<tempStructure>$1
+				$2
+				$3</tempStructure>
+		</format>
+		<args>
+			<arg evaluator="xml" expression="get-property('tempStructure')"
+				xmlns:ns="http://org.apache.synapse/xsd" />
+			<arg evaluator="xml" expression="get-property('responseCrossRef')"
+				xmlns:ns="http://org.apache.synapse/xsd" />
+			<arg evaluator="xml" expression="get-property('responseBFO')"
+				xmlns:ns="http://org.apache.synapse/xsd" />
+		</args>
+	</payloadFactory>
+	<property name="fulfillEntitlementRequest" expression="$body/*"
+		scope="default" type="OM" />
+	<clone continueParent="true" id="GSEEntitlement" sequential="true">
+		<target>
+			<sequence>
+				<filter xmlns:ns="http://org.apache.synapse/xsd"
+					xpath="(count(//*[local-name()='tempLineItem']/*[local-name()='lineItem'])!=0) or (count(//*[local-name()='tempMaintainanceLineItem']/*[local-name()='maintainanceLineItem'])!=0)">
+					<then>
+						<enrich>
+							<source clone="true" property="incmngRequest" type="property" />
+							<target action="child" type="body" />
+						</enrich>
+						<log level="custom">
+							<property
+								expression="fn:concat('Proceeding for GSE FulfillEntitlements Calls:',get-property('operation','correlationId'))"
+								name="logText" />
+						</log>
+						<property expression="get-property('SYSTEM_DATE', 'yyyy-MM-dd')"
+							name="Date" scope="default" type="STRING" />
+						<property name="FORCE_ERROR_ON_SOAP_FAULT" scope="default"
+							type="STRING" value="true" />
+						<property action="remove" name="REST_URL_POSTFIX" scope="axis2" />
+						<property name="ContentType" scope="axis2" type="STRING"
+							value="application/xml" />
+						<property name="messageType" scope="axis2" type="STRING"
+							value="application/xml" />
+						<property name="HTTP_METHOD" scope="axis2" type="STRING"
+							value="POST" />
+						<header name="NO_KEEPALIVE" scope="transport" value="true" />
+						<property
+							expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))"
+							name="X-SE-IFW-RequestId" scope="transport" type="STRING"
+							xmlns:ns="http://org.apache.synapse/xsd" />
+						<header expression="concat('Bearer ',$ctx:Token)" name="Authorization"
+							scope="transport" />
+						<property expression="'rest/gse/fulfillentitlements/2.0/entitlements'"
+							name="getURL" scope="default" type="STRING" />
+						<property action="remove" name="REST_URL_POSTFIX" scope="axis2" />
+						<property expression="get-property('getURL')" name="uri.var.serviceName"
+							scope="default" type="STRING" />
+						<property action="remove" name="NO_ENTITY_BODY" scope="axis2" />
+						<property name="SOAPAction" scope="transport" type="STRING"
+							value="" />
+						<xslt
+							key="gov:xslts/ProcessSNBOrder/2.0/FulfillEntitlements_Request.xslt">
+							<property expression="get-property('typePartner')" name="typePartner" />
+							<property expression="get-property('Date')" name="currentDate" />
+							<property expression="get-property('SourceAccountType')"
+								name="SourceAccountType" />
+							<property expression="get-property('sourceSystem')"
+								name="sourceSystem" />
+							<property expression="get-property('accountType')" name="accountType" />
+							<property expression="get-property('deviceFlag')" name="deviceFlag" />
+							<property expression="get-property('accountTypeBFO')"
+								name="accountTypeBFO" />
+							<property expression="get-property('SEWorkIDAccOwner')"
+								name="SEWorkIDAccOwner" />
+							<property expression="get-property('sourceSystem')"
+								name="sourceSystem" />
+							<property expression="get-property('maintainanceDate')"
+								name="tempAddedYear" />
+						</xslt>
+						<property expression="$body/*" name="requestFulfillEntitlements"
+							scope="default" type="OM" />
+						<property name="logText" scope="default" type="STRING"
+							value="ProcessSNBOrder GSE FulfillEntitlements Request" />
+						<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+						<property action="remove" name="Accept-Encoding" scope="transport" />
+						<enrich>
+							<source clone="true" property="responseCrossRef" type="property" />
+							<target action="child" type="body" />
+						</enrich>
+						<call>
+							<endpoint key="APIM_REST_Endpoint" />
+						</call>
+						<filter source="$axis2:HTTP_SC" regex="200">
+						    <then/>
+						    <else>
+						         <sequence key="ProcessSNBOrderFault-2_0"/>
+						    </else>
+						</filter>
+						<property name="logText" scope="default" type="STRING"
+							value="ProcessSNBOrder GSE FulfillEntitlements Response" />
+						<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+						<property expression="$body/*" name="responseFulfillEntitlements"
+							scope="default" type="OM" />
+						<payloadFactory media-type="xml">
+							<format>
+								<tempStructure>$1
+									$2</tempStructure>
+							</format>
+							<args>
+								<arg evaluator="xml" expression="get-property('responseFulfillEntitlements')" />
+								<arg evaluator="xml" expression="get-property('requestFulfillEntitlements')" />
+							</args>
+						</payloadFactory>
+						<filter
+							xpath="(//*[local-name()='fulfillEntitlementsResponse']/*[local-name()='status']/text()='SUCCESS' or //*[local-name()='fulfillEntitlementsResponse']/*[local-name()='status']/text()='PARTIAL_FAILURE') and (count(//*[local-name()='fulfillEntitlements']/*[local-name()='entitlement']/*[local-name()='maintenanceLineItems'])!=0)">
+							<then>
+							    <log level="custom">
+                                   <property expression="fn:concat('Proceeding for linkMaintenanceLineItem Calls:',get-property('operation','correlationId'))" name="logText"/>
+                                </log>
+								<property action="remove" name="REST_URL_POSTFIX"
+									scope="axis2" />
+								<xslt
+									key="gov:xslts/ProcessSNBOrder/2.0/LinkMaintenanceLineItem_Request.xslt" />
+								<property name="logText" scope="default" type="STRING"
+									value="ProcessSNBOrder LinkMaintenanceLineItem Resquest" />
+								<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+								<property name="messageType" scope="axis2" type="STRING"
+									value="text/xml" />
+								<property name="ContentType" scope="axis2" type="STRING"
+									value="text/xml" />
+								<header name="Action" scope="default" value="linkMaintenanceLineItem" />
+								<property name="SOAPAction" scope="transport" type="STRING"
+									value="linkMaintenanceLineItem" />
+								<header name="HTTP_METHOD" scope="transport" value="POST" />
+								<header name="NO_KEEPALIVE" scope="transport" value="true" />
+								<property expression="concat('Bearer ',$ctx:Token)"
+									name="Authorization" scope="transport" type="STRING" />
+								<property expression="'soap/gse/entitlementOrder/2.0'"
+									name="getURL" scope="default" type="STRING" />
+								<property expression="get-property('getURL')" name="uri.var.serviceName"
+									scope="default" type="STRING" />
+								<property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+								<property action="remove" name="Accept-Encoding" scope="transport" />
+								<call>
+									<endpoint key="APIM_REST_Endpoint" />
+								</call>
+								<property name="logText" scope="default" type="STRING"
+									value="ProcessSNBOrder LinkMaintenanceLineItem Response" />
+								<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+							</then>
+							<else/>
+						</filter>
+						<clone continueParent="true" id="SFTPEmailCreation"
+							sequential="true">
+							<target>
+								<sequence>
+									<payloadFactory media-type="xml">
+										<format>
+											<tempStructure>$1</tempStructure>
+										</format>
+										<args>
+											<arg evaluator="xml"
+												expression="get-property('responseFulfillEntitlements')" />
+										</args>
+									</payloadFactory>
+									<filter
+										xpath="(count(//*[local-name()='fulfillEntitlementsResponse']/*[local-name()='entitlement']/*[local-name()='failureReason'])!=0)">
+										<then>
+										    <log level="custom">
+                                               <property expression="fn:concat('Proceeding for Email for GSE-FulfillEntitlement Business Error:',get-property('operation','correlationId'))" name="logText"/>
+                                            </log>
+											<property name="FORCE_ERROR_ON_SOAP_FAULT" scope="default"
+												type="STRING" value="true" />
+											<xslt key="gov:xslts/ProcessSNBOrder/2.0/ProcessSNBError.xslt" />
+											<property name="messageType" scope="axis2" type="STRING"
+												value="text/html" />
+											<property name="ContentType" scope="axis2" type="STRING"
+												value="text/html" />
+											<property name="OUT_ONLY" scope="default" type="STRING"
+												value="true" />
+											<property name="FORCE_SC_ACCEPTED" scope="axis2"
+												type="STRING" value="true" />
+											<property expression="get-property('subject')" name="Subject"
+												scope="transport" type="STRING" />
+											<property expression="get-property('emailAddress')"
+												name="Recipient" scope="default" type="STRING" />
+											<header expression="fn:concat('mailto:',get-property('Recipient'))"
+												name="To" scope="default" />
+											<property expression="//*[local-name()='errorResponse']"
+												name="messageBody" scope="default" type="STRING" />
+											<log level="custom">
+												<property expression="get-property('To')" name="Email Recipient----" />
+												<property expression="get-property('messageBody')"
+													name="Email Body----" />
+											</log>
+											<script language="js"><![CDATA[var emailMessage1 = mc.getProperty('emailMessage1');
+	                 	var emailMessage2 = mc.getProperty('emailMessage2');
+	                 	var messageBody = mc.getProperty('messageBody');
+	                 	mc.setPayloadXML(<html>{emailMessage1}<br /><br />{emailMessage2}<br /><br />{messageBody}</html>);]]></script>
+											<property name="FORCE_CONTENT_TYPE_BASED_FORMATTER"
+												scope="axis2" type="STRING" value="true" />
+											<send />
+										</then>
+										<else />
+									</filter>
+									<drop />
+								</sequence>
+							</target>
+							<target>
+								<sequence>
+									<payloadFactory media-type="xml">
+										<format>
+											<tempStructure>$1
+												$2</tempStructure>
+										</format>
+										<args>
+											<arg evaluator="xml"
+												expression="get-property('responseFulfillEntitlements')" />
+											<arg evaluator="xml"
+												expression="get-property('requestFulfillEntitlements')" />
+										</args>
+									</payloadFactory>
+									<filter
+										xpath="((//*[local-name()='fulfillEntitlementsResponse']/*[local-name()='status']/text()='SUCCESS' or //*[local-name()='fulfillEntitlementsResponse']/*[local-name()='status']/text()='PARTIAL_FAILURE') and (count(//*[local-name()='fulfillEntitlements']//*[local-name()='entitlement']/*[local-name()='maintenanceLineItems'])=0)) or ((//*[local-name()='fulfillEntitlementsResponse']/*[local-name()='status']/text()='SUCCESS' or //*[local-name()='fulfillEntitlementsResponse']/*[local-name()='status']/text()='PARTIAL_FAILURE') and (count(//*[local-name()='fulfillEntitlements']/*[local-name()='entitlement'])=2))">
+										<then>
+										    <log level="custom">
+                                               <property expression="fn:concat('Proceeding for GetUsersQuery Calls:',get-property('operation','correlationId'))" name="logText"/>
+                                            </log>
+											<property action="remove" name="REST_URL_POSTFIX"
+												scope="axis2" />
+											<xslt
+												key="gov:xslts/ProcessSNBOrder/2.0/GetUserQuery_Request.xslt">
+												<property expression="get-property('searchType4')"
+													name="searchType" />
+												<property expression="get-property('pageNumber4')"
+													name="pageNumber" />
+												<property expression="get-property('batchSize4')"
+													name="batchSize" />
+												<property expression="get-property('orgType4')"
+													name="orgType" />
+											</xslt>
+											<property name="logText" scope="default" type="STRING"
+												value="ProcessSNBOrder GetUsersQuery Resquest" />
+											<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+											<property name="messageType" scope="axis2" type="STRING"
+												value="application/xml" />
+											<property name="ContentType" scope="axis2" type="STRING"
+												value="application/xml" />
+											<header name="Action" scope="default" value="getUsersQuery" />
+											<property name="SOAPAction" scope="transport" type="STRING"
+												value="getUserQuery" />
+											<header name="HTTP_METHOD" scope="transport" value="POST" />
+											<header name="NO_KEEPALIVE" scope="transport" value="true" />
+											<property expression="concat('Bearer ',$ctx:Token)"
+												name="Authorization" scope="transport" type="STRING" />
+											<property expression="'soap/gse/userOrgHierarchy/3.0'"
+												name="getURL" scope="default" type="STRING" />
+											<property expression="get-property('getURL')" name="uri.var.serviceName"
+												scope="default" type="STRING" />
+											<property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+											<property action="remove" name="Accept-Encoding"
+												scope="transport" />
+											<call>
+												<endpoint key="APIM_REST_Endpoint" />
+											</call>
+											<property name="logText" scope="default" type="STRING"
+												value="ProcessSNBOrder GetUsersQuery Response" />
+											<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+											<property expression="$body/*" name="responseGetUsers"
+												scope="default" type="OM" />
+											<payloadFactory media-type="xml">
+												<format>
+													<tempStructure>$1
+														$2</tempStructure>
+												</format>
+												<args>
+													<arg evaluator="xml"
+														expression="get-property('requestFulfillEntitlements')" />
+													<arg evaluator="xml" expression="get-property('responseGetUsers')" />
+												</args>
+											</payloadFactory>
+											<filter
+												xpath="count(//*[local-name()='getUsersQueryResponse']/*[local-name()='responseData']/*[local-name()='user'])!=0 or string-length(//*[local-name()='fulfillEntitlements']/*[local-name()='entitlement']/*[local-name()='shipToEmail']/text())!=0">
+												<then>
+												    <log level="custom">
+                                                       <property expression="fn:concat('Proceeding for EmailEntitlement User List Calls:',get-property('operation','correlationId'))" name="logText"/>
+                                                    </log>
+													<property action="remove" name="REST_URL_POSTFIX"
+														scope="axis2" />
+													<xslt
+														key="gov:xslts/ProcessSNBOrder/2.0/EmailEntitlement_Request.xslt">
+														<property expression="get-property('ignoreExistingEmailList')"
+															name="ignoreExistingEmailList" />
+														<property expression="get-property('ignoreExistingEmailList1')"
+															name="ignoreExistingEmailList1" />
+													</xslt>
+													<property name="logText" scope="default" type="STRING"
+														value="ProcessSNBOrder EmailEntitlement Resquest" />
+													<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+													<property name="messageType" scope="axis2" type="STRING"
+														value="text/xml" />
+													<property name="ContentType" scope="axis2" type="STRING"
+														value="text/xml" />
+													<header name="Action" scope="default" value="emailEntitlement" />
+													<property name="SOAPAction" scope="transport"
+														type="STRING" value="emailEntitlement" />
+													<header name="HTTP_METHOD" scope="transport" value="POST" />
+													<header name="NO_KEEPALIVE" scope="transport" value="true" />
+													<property expression="concat('Bearer ',$ctx:Token)"
+														name="Authorization" scope="transport" type="STRING" />
+													<property expression="'soap/gse/entitlementOrder/2.0'"
+														name="getURL" scope="default" type="STRING" />
+													<property expression="get-property('getURL')"
+														name="uri.var.serviceName" scope="default" type="STRING" />
+													<property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+													<property action="remove" name="Accept-Encoding"
+														scope="transport" />
+													<call>
+														<endpoint key="APIM_REST_Endpoint" />
+													</call>
+													<property name="logText" scope="default" type="STRING"
+														value="ProcessSNBOrder EmailEntitlement Response" />
+													<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+													<payloadFactory media-type="xml">
+														<format>
+															<tempStructure>$1
+																$2</tempStructure>
+														</format>
+														<args>
+															<arg evaluator="xml"
+																expression="get-property('requestFulfillEntitlements')" />
+															<arg evaluator="xml" expression="get-property('responseGetUsers')" />
+														</args>
+													</payloadFactory>
+													<filter
+														xpath="count(//*[local-name()='getUsersQueryResponse']/*[local-name()='responseData']/*[local-name()='user'])!=0">
+														<then>
+														    <log level="custom">
+                                                               <property expression="fn:concat('Proceeding for EmailEntitlement ShipToEmail Calls:',get-property('operation','correlationId'))" name="logText"/>
+                                                            </log>
+															<property action="remove" name="REST_URL_POSTFIX"
+																scope="axis2" />
+															<xslt
+																key="gov:xslts/ProcessSNBOrder/2.0/EmailEntitlement_ShipToEmail_Request.xslt">
+																<property expression="get-property('ignoreExistingEmailList')"
+																	name="ignoreExistingEmailList" />
+															</xslt>
+															<property name="logText" scope="default" type="STRING"
+																value="ProcessSNBOrder ShipToEmail EmailEntitlement Resquest" />
+															<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+															<property name="messageType" scope="axis2" type="STRING"
+																value="text/xml" />
+															<property name="ContentType" scope="axis2" type="STRING"
+																value="text/xml" />
+															<header name="Action" scope="default" value="emailEntitlement" />
+															<property name="SOAPAction" scope="transport"
+																type="STRING" value="emailEntitlement" />
+															<header name="HTTP_METHOD" scope="transport"
+																value="POST" />
+															<header name="NO_KEEPALIVE" scope="transport"
+																value="true" />
+															<property expression="concat('Bearer ',$ctx:Token)"
+																name="Authorization" scope="transport" type="STRING" />
+															<property expression="'soap/gse/entitlementOrder/2.0'"
+																name="getURL" scope="default" type="STRING" />
+															<property expression="get-property('getURL')"
+																name="uri.var.serviceName" scope="default" type="STRING" />
+															<property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+															<property action="remove" name="Accept-Encoding"
+																scope="transport" />
+															<call>
+																<endpoint key="APIM_REST_Endpoint" />
+															</call>
+															<property name="logText" scope="default" type="STRING"
+																value="ProcessSNBOrder EmailEntitlement ShipToEmail Response" />
+															<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+														</then>
+														<else />
+													</filter>
+												</then>
+												<else>
+												    <log level="custom">
+                                                        <property expression="fn:concat('Proceeding for Email for Entitlement has been created successfully however the corresponding EmailEntitlement:',get-property('operation','correlationId'))" name="logText"/>
+                                                    </log>
+													<property
+														expression="get-property('SYSTEM_DATE', 'yyyy-MM-dd HH:mm:ss')"
+														name="DateTime" scope="default" type="STRING" />
+													<property name="messageType" scope="axis2" type="STRING"
+														value="text/html" />
+													<property name="ContentType" scope="axis2" type="STRING"
+														value="text/html" />
+													<property name="OUT_ONLY" scope="default" type="STRING"
+														value="true" />
+													<property name="FORCE_SC_ACCEPTED" scope="axis2"
+														type="STRING" value="true" />
+													<property expression="get-property('subject1')"
+														name="Subject" scope="transport" type="STRING" />
+													<property expression="get-property('emailAddress')"
+														name="Recipient" scope="default" type="STRING" />
+													<header expression="fn:concat('mailto:',get-property('Recipient'))"
+														name="To" scope="default" />
+													<property
+														expression="concat(get-property('emailBody1'),get-property('emailBody2'),get-property('emailBody3'),get-property('emailBody4'),get-property('IDOCNumber'),get-property('DateTime'))"
+														name="BodyStructure" scope="default" type="STRING" />
+													<log level="custom">
+														<property expression="get-property('To')" name="Email Recipient----" />
+														<property expression="get-property('BodyStructure')"
+															name="Email Body----" />
+													</log>
+													<script language="js"><![CDATA[var emailBody1 = mc.getProperty('emailBody1');
+                                var emailBody2 = mc.getProperty('emailBody2');
+                                var emailBody3 = mc.getProperty('emailBody3');
+                                var emailBody4 = mc.getProperty('emailBody4');
+								var IDOCNumber = mc.getProperty('IDOCNumber');
+								var DateTime = mc.getProperty('DateTime');
+								mc.setPayloadXML(<html>{emailBody1}<br /><br />{emailBody2}<br /><br />{emailBody3}<br /><br />{emailBody4}{IDOCNumber} and Timestamp - {DateTime}</html>);]]></script>
+													<property name="FORCE_CONTENT_TYPE_BASED_FORMATTER"
+														scope="axis2" type="STRING" value="true" />
+													<send />
+												</else>
+											</filter>
+										</then>
+										<else />
+									</filter>
+									<drop />
+								</sequence>
+							</target>
+							<target>
+								<sequence>
+									<payloadFactory media-type="xml">
+										<format>
+											<tempStructure>$1
+												$2
+												$3</tempStructure>
+										</format>
+										<args>
+											<arg evaluator="xml"
+												expression="get-property('responseFulfillEntitlements')" />
+											<arg evaluator="xml"
+												expression="get-property('requestFulfillEntitlements')" />
+											<arg evaluator="xml" expression="get-property('tempStructure')" />
+										</args>
+									</payloadFactory>
+									<filter
+										xpath="(//*[local-name()='fulfillEntitlementsResponse']/*[local-name()='status']/text()='SUCCESS' or //*[local-name()='fulfillEntitlementsResponse']/*[local-name()='status']/text()='PARTIAL_FAILURE')">
+										<then>
+										    <log level="custom">
+                                                <property expression="fn:concat('Proceeding for SFTP Confirmation File Posting:',get-property('operation','correlationId'))" name="logText"/>
+                                            </log>
+											<enrich>
+												<source clone="true" property="incmngRequest" type="property" />
+												<target action="child" type="body" />
+											</enrich>
+											<xslt
+												key="gov:xslts/ProcessSNBOrder/2.0/ProcessSNBConfirmationFile.xslt">
+												<property expression="get-property('fileName')"
+													name="fileName" />
+											</xslt>
+											<property name="logText" scope="default" type="STRING"
+												value="ProcessSNBOrder Creation ProcessSNBConfirmationFile Payload Response" />
+											<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+											<property expression="//*[local-name()='confirmationFile']"
+												name="inputContent" scope="operation" type="STRING" />
+											<property name="SFTPCount" scope="operation" type="INTEGER"
+												value="1" />
+											<sequence key="ProcessSNBOrderSFTPFile-2_0" />
+											<log level="custom">
+												<property name="--ProcessSNBOrderSFTPFile--"  value="***SUCCESSFULLY_SENT***" />
+											</log>
+										</then>
+										<else />
+									</filter>
+									<drop />
+								</sequence>
+							</target>
+						</clone>
+					</then>
+					<else />
+				</filter>
+				<drop />
+			</sequence>
+		</target>
+		<target>
+			<sequence>
+				<filter xmlns:ns="http://org.apache.synapse/xsd"
+					xpath="count(//*[local-name()='tempMaintainanceRenewal']/*[local-name()='maintainanceRenewal'])!=0">
+					<then>
+						<enrich>
+							<source clone="true" property="incmngRequest" type="property" />
+							<target action="child" type="body" />
+						</enrich>
+						<log level="custom">
+							<property
+								expression="fn:concat('Proceeding for GSE CreateEntitlementLineItem Calls:',get-property('operation','correlationId'))"
+								name="logText" />
+						</log>
+						<property action="remove" name="REST_URL_POSTFIX" scope="axis2" />
+						<property name="FORCE_ERROR_ON_SOAP_FAULT" scope="default"
+							type="STRING" value="true" />
+						<xslt
+							key="gov:xslts/ProcessSNBOrder/2.0/CreateEntitlementLineItem_Request.xslt">
+							<property expression="get-property('maintainanceDate')"
+								name="tempAddedYear" />
+						</xslt>
+						<property name="logText" scope="default" type="STRING"
+							value="ProcessSNBOrder CreateEntitlementLineItem Resquest" />
+						<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+						<property name="messageType" scope="axis2" type="STRING"
+							value="text/xml" />
+						<property name="ContentType" scope="axis2" type="STRING"
+							value="text/xml" />
+						<header name="Action" scope="default" value="createEntitlementLineItem" />
+						<property name="SOAPAction" scope="transport" type="STRING"
+							value="createEntitlementLineItem" />
+						<header name="HTTP_METHOD" scope="transport" value="POST" />
+						<header name="NO_KEEPALIVE" scope="transport" value="true" />
+						<property expression="concat('Bearer ',$ctx:Token)" name="Authorization"
+							scope="transport" type="STRING" />
+						<property expression="'soap/gse/entitlementOrder/2.0'"
+							name="getURL" scope="default" type="STRING" />
+						<property expression="get-property('getURL')" name="uri.var.serviceName"
+							scope="default" type="STRING" />
+						<property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+						<property action="remove" name="Accept-Encoding" scope="transport" />
+						<call>
+							<endpoint key="APIM_REST_Endpoint" />
+						</call>
+						<property name="logText" scope="default" type="STRING"
+							value="ProcessSNBOrder CreateEntitlementLineItem Response" />
+						<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+						<property expression="$body/*" name="responseCreateEntitlementLineItem"
+							scope="default" type="OM" />
+						<!-- UpdateSimpleEntitlementRequest Call-->
+						<enrich>
+							<source clone="true" property="incmngRequest" type="property" />
+							<target type="body" />
+						</enrich>
+						<enrich>
+							<source clone="true" property="fulfillEntitlementRequest" type="property" />
+							<target action="child" type="body" />
+						</enrich>
+						<log level="custom">
+							<property
+								expression="fn:concat('Proceeding for GSE UpdateSimpleEntitlementRequest Calls:',get-property('operation','correlationId'))"
+								name="logText" />
+							<property expression="get-property('autoDeploy')"
+								name="autoDeploy From BMS Config file *******" />
+								<property expression="$body/*"
+								name="Before updating request *******" />
+						</log>
+						<property action="remove" name="REST_URL_POSTFIX" scope="axis2" />
+						<property name="FORCE_ERROR_ON_SOAP_FAULT" scope="default"
+							type="STRING" value="true" />
+						<xslt
+							key="gov:xslts/ProcessSNBOrder/2.0/UpdateSimpleEntitlementRequest.xslt">
+							<property expression="get-property('autoDeploy')"
+								name="autoDeploy" />
+						</xslt>
+						<property name="logText" scope="default" type="STRING"
+							value="ProcessSNBOrder UpdateSimpleEntitlementRequest Resquest" />
+						<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+						<property name="messageType" scope="axis2" type="STRING"
+							value="text/xml" />
+						<property name="ContentType" scope="axis2" type="STRING"
+							value="text/xml" />
+						<header name="Action" scope="default" value="updateSimpleEntitlementRequest" />
+						<property name="SOAPAction" scope="transport" type="STRING"
+							value="updateSimpleEntitlementRequest" />
+						<header name="HTTP_METHOD" scope="transport" value="POST" />
+						<header name="NO_KEEPALIVE" scope="transport" value="true" />
+						<property expression="concat('Bearer ',$ctx:Token)" name="Authorization"
+							scope="transport" type="STRING" />
+						<property expression="'soap/gse/entitlementOrder/2.0'"
+							name="getURL" scope="default" type="STRING" />
+						<property expression="get-property('getURL')" name="uri.var.serviceName"
+							scope="default" type="STRING" />
+						<property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+						<property action="remove" name="Accept-Encoding" scope="transport" />
+						<call>
+							<endpoint key="APIM_REST_Endpoint" />
+						</call>
+						<property name="logText" scope="default" type="STRING"
+							value="ProcessSNBOrder UpdateSimpleEntitlementRequest Response" />
+						<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+						<property expression="$body/*" name="responseUpdateSimpleEntitlement"
+							scope="default" type="OM" />
+						
+						<clone continueParent="true" id="SFTPEmailRenewal"
+							sequential="true">
+							<target>
+								<sequence>
+									<payloadFactory media-type="xml">
+										<format>
+											<tempStructure>$1
+												$2</tempStructure>
+										</format>
+										<args>
+											<arg evaluator="xml" expression="get-property('tempStructure')" />
+											<arg evaluator="xml"
+												expression="get-property('responseCreateEntitlementLineItem')" />
+										</args>
+									</payloadFactory>
+									<filter
+										xpath="(//*[local-name()='createEntitlementLineItemResponse']/*[local-name()='statusInfo']/*[local-name()='status']/text()='SUCCESS') or (//*[local-name()='createEntitlementLineItemResponse']/*[local-name()='statusInfo']/*[local-name()='status']/text()='PARTIAL_FAILURE')">
+										<then>
+										    <log level="custom">
+							                   <property expression="fn:concat('Proceeding for SFTP Confirmation File Posting:',get-property('operation','correlationId'))" name="logText" />
+						                    </log>
+											<enrich>
+												<source clone="true" property="incmngRequest" type="property" />
+												<target action="child" type="body" />
+											</enrich>
+											<xslt
+												key="gov:xslts/ProcessSNBOrder/2.0/ProcessSNBConfirmationFile.xslt">
+												<property expression="get-property('fileName')"
+													name="fileName" />
+											</xslt>
+											<property name="logText" scope="default" type="STRING"
+												value="ProcessSNBOrder Renewal ProcessSNBConfirmationFile Payload Response" />
+											<sequence key="gov:sequences/common/1.0/CommonLogger.xml" />
+											<property expression="//*[local-name()='confirmationFile']"
+												name="inputContent" scope="operation" type="STRING" />
+											<property name="SFTPCount" scope="operation" type="INTEGER"
+												value="1" />
+											<sequence key="ProcessSNBOrderSFTPFile-2_0" />
+											<log level="custom">
+												<property name="--ProcessSNBOrderSFTPFile--"  value="***SUCCESSFULLY_SENT***" />
+											</log>
+										</then>
+										<else />
+									</filter>
+									<drop />
+								</sequence>
+							</target>
+							<target>
+								<sequence>
+									<payloadFactory media-type="xml">
+										<format>
+											<tempStructure>$1
+												$2</tempStructure>
+										</format>
+										<args>
+											<arg evaluator="xml" expression="get-property('tempStructure')" />
+											<arg evaluator="xml"
+												expression="get-property('responseCreateEntitlementLineItem')" />
+										</args>
+									</payloadFactory>
+									<filter
+										xpath="(count(//*[local-name()='createEntitlementLineItemResponse']/*[local-name()='failedData']/*[local-name()='failedLineItemData']/*[local-name()='reason'])!=0)">
+										<then>
+										    <log level="custom">
+							                   <property expression="fn:concat('Proceeding for Email for failed CreateEntitlementLineItem Calls:',get-property('operation','correlationId'))" name="logText" />
+						                    </log>
+											<xslt key="gov:xslts/ProcessSNBOrder/2.0/ProcessSNBError.xslt" />
+											<property name="FORCE_ERROR_ON_SOAP_FAULT" scope="default"
+												type="STRING" value="true" />
+											<property name="messageType" scope="axis2" type="STRING"
+												value="text/html" />
+											<property name="ContentType" scope="axis2" type="STRING"
+												value="text/html" />
+											<property name="OUT_ONLY" scope="default" type="STRING"
+												value="true" />
+											<property name="FORCE_SC_ACCEPTED" scope="axis2"
+												type="STRING" value="true" />
+											<property expression="get-property('subject')" name="Subject"
+												scope="transport" type="STRING" />
+											<property expression="get-property('emailAddress')"
+												name="Recipient" scope="default" type="STRING" />
+											<header expression="fn:concat('mailto:',get-property('Recipient'))"
+												name="To" scope="default" />
+											<property expression="//*[local-name()='errorResponse']"
+												name="messageBody" scope="default" type="STRING" />
+											<log level="custom">
+												<property expression="get-property('To')" name="Email Recipient----" />
+												<property expression="get-property('messageBody')"
+													name="Email Body----" />
+											</log>
+											<script language="js"><![CDATA[var emailMessage1 = mc.getProperty('emailMessage1');
+	                 	                                       var emailMessage2 = mc.getProperty('emailMessage2');
+	                 	                                       var messageBody = mc.getProperty('messageBody');
+	                 	                                       mc.setPayloadXML(<html>{emailMessage1}<br /><br />{emailMessage2}<br /><br />{messageBody}</html>);]]></script>
+											<property name="FORCE_CONTENT_TYPE_BASED_FORMATTER"
+												scope="axis2" type="STRING" value="true" />
+											<send />
+										</then>
+										<else />
+									</filter>
+									<drop />
+								</sequence>
+							</target>
+						</clone>
+					</then>
+					<else />
+				</filter>
+				<drop />
+			</sequence>
+		</target>
+	</clone>
+</sequence>

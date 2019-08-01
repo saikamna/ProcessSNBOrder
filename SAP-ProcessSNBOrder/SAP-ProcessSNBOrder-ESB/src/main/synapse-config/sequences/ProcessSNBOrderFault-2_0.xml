@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="ProcessSNBOrderFault-2_0" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+<log level="custom">
+		<property
+			expression="fn:concat('--Technical Exception--',' cor-id:',get-property('operation','requestId'))"
+			name="LogText" />
+		<property expression="get-property('ERROR_CODE')" name="ERROR_CODE" />
+		<property expression="get-property('ERROR_DETAIL')" name="ERROR_DETAIL" />
+	</log>
+	<log level="custom">
+		<property
+			expression="fn:concat('Inside  ProcessSNBOrderFault-2_0 sequence...',' cor-id:',get-property('operation','correlationId'))"
+			name="LogText" />
+	</log>
+	<log level="custom">
+		<property
+			expression="fn:concat('Adding the request to Fault Queue...',' cor-id:',get-property('operation','correlationId'))"
+			name="LogText" />
+	</log>
+	<payloadFactory media-type="xml">
+		<format>
+			<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+				<soapenv:Header />
+				<soapenv:Body>
+					$1
+				</soapenv:Body>
+			</soapenv:Envelope>
+		</format>
+		<args>
+			<arg evaluator="xml" expression="$ctx:incmngRequest" />
+		</args>
+	</payloadFactory>
+	<filter regex="true" source="get-property('operation','SFTPFlag')"
+		xmlns:ns="http://org.apache.synapse/xsd">
+		<then>
+			<property expression="get-property('operation','SFTPCount')"
+				name="count" scope="default" type="STRING" />
+			<filter regex="false"
+				source="boolean(get-property('operation','SFTPCount')=4.0)">
+				<then>
+					<log level="custom">
+						<property expression="get-property('operation','SFTPCount')"
+							name="****Inside ProcessSNBOrderSFTPFault-2_0 SFTP Retry Count****" />
+					</log>
+					<script language="js"><![CDATA[var value1 = parseInt(mc.getProperty("count"));
+                                                   var result = value1 + 1;
+                                                   mc.setProperty("Result", result);
+                                                   java.lang.Thread.sleep(60000);]]></script>
+					<property expression="get-property('Result')" name="SFTPCount"
+						scope="operation" type="STRING" />
+					<sequence key="ProcessSNBOrderSFTPFile-2_0" />
+				</then>
+				<else>
+					<log level="custom">
+						<property expression="get-property('operation','SFTPCount')"
+							name="****Maximum Retry Reached SFTP Retry Count****" />
+					</log>
+				</else>
+			</filter>
+			<drop />
+		</then>
+		<else>
+			<filter description="" regex="false"
+				source="boolean(get-property('operation','SAPSNB_RETRY_HEADER'))">
+				<then>
+					<property name="SAPSNB_RETRY_HEADER" scope="operation"
+						type="STRING" value="0.0" />
+				</then>
+				<else />
+			</filter>
+			<property
+				expression="number(get-property('operation','SAPSNB_RETRY_HEADER') + 1)"
+				name="SAPSNB_RETRY_HEADER" scope="operation" type="DOUBLE" />
+			<filter description=""
+				xpath="get-property('operation','SAPSNB_RETRY_HEADER') > get-property('retryCount')">
+				<then>
+					<header expression="get-property('operation','SAPSNB_RETRY_HEADER')"
+						name="SAPSNB_RETRY_HEADER" scope="transport" />
+					<log level="custom">
+						<property
+							expression="fn:concat('**GSE-FulfillEntitlements request has been added to DeadLetter Queue** cor-id:',get-property('operation','correlationId'),'Retry Attempt:',get-property('operation','SAPSNB_RETRY_HEADER'))"
+							name="LogText" xmlns:ns="http://org.apache.synapse/xsd" />
+					</log>
+					<property name="OUT_ONLY" scope="default" type="STRING"
+						value="true" />
+					<header
+						expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))"
+						name="X-SE-IFW-RequestId" scope="transport" />
+					<send>
+						<endpoint key="SAP-ProcessSNBOrder-DeadLetterQueue" />
+					</send>
+				</then>
+				<else>
+					<header expression="get-property('operation','SAPSNB_RETRY_HEADER')"
+						name="SAPSNB_RETRY_HEADER" scope="transport" />
+					<log level="custom">
+						<property
+							expression="fn:concat('**GSE-FulfillEntitlements request has been re-added to the Queue** cor-id:',get-property('operation','correlationId'), 'Retry Attempt:',get-property('operation','SAPSNB_RETRY_HEADER'))"
+							name="LogText" xmlns:ns="http://org.apache.synapse/xsd" />
+					</log>
+					<header
+						expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))"
+						name="X-SE-IFW-RequestId" scope="transport" />
+					<store messageStore="ProcessSNBOrderFulfillEntitlementStore-2_0" />
+				</else>
+			</filter>
+		</else>
+	</filter>
+</sequence>

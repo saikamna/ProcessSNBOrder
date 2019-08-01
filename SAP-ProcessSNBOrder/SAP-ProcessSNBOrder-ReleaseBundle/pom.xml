@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+ <parent>
+    <groupId>com.schneider-electric.ifw.wso2esb.service.sap</groupId>
+    <artifactId>SAP-ProcessSNBOrder</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
+  </parent>
+	 <groupId>com.schneider-electric.ifw.wso2esb.service.sap.SAP-ProcessSNBOrder</groupId>
+	<artifactId>SAP-ProcessSNBOrder-ReleaseBundle</artifactId>
+	<version>2.0.0</version>
+	<packaging>pom</packaging>
+	<name>SAP-ProcessSNBOrder-ReleaseBundle</name>
+	<description>ReleaseBundle</description>
+	<build>
+		<directory>target</directory>
+		<plugins>
+			<plugin>
+				<inherited>true</inherited>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<phase>package</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<descriptors>
+						<descriptor>${user.home}/.m2/assembly.xml</descriptor>
+					</descriptors>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

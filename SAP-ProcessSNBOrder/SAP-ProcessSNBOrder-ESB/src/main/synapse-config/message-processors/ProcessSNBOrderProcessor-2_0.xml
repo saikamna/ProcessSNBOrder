@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<messageProcessor
+  class="org.apache.synapse.message.processor.impl.sampler.SamplingProcessor"
+  messageStore="ProcessSNBOrderStore-2_0"
+  name="ProcessSNBOrderProcessor-2_0" xmlns="http://ws.apache.org/ns/synapse">
+  <parameter name="sequence">ProcessSNBOrderReadFromQueue-2_0</parameter>
+  <parameter name="max.delivery.drop">Disabled</parameter>
+  <parameter name="interval">1000</parameter>
+  <parameter name="is.active">true</parameter>
+  <parameter name="concurrency">1</parameter>
+</messageProcessor>
