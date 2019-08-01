@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="ProcessSNBOrderFirstPartIn-1_0"
+  onError="ProcessSNBOrderFault-1_0" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+  <log level="custom">
+     <property expression="fn:concat('Inside ProcessSNBOrderFirstPartIn-1_0 cor-id:',get-property('operation','correlationId'))" name="LogText" xmlns:ns="http://org.apache.synapse/xsd"/>
+     <property expression="get-property(&quot;SYSTEM_DATE&quot;, &quot;yyyy.MM.dd 'at' HH:mm:ss z&quot;)" name="TimeStamp" xmlns:ns="http://org.apache.synapse/xsd"/>
+  </log>
+  <call-template target="gov:sequences/common/1.0/Salesforce-GetAccessToken.xml">
+    <with-param name="tokenConfigFileName" value="BFO-TokenConfig"/>
+  </call-template>
+  <property expression="//*[local-name()='access_token']"
+    name="accessToken" scope="operation" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <sequence key="gov:sequences/common/1.0/SalesForce-RemoveHeaders.xml"/>
+  <property name="singleQuote" scope="default" type="STRING" value="'"/>
+  <payloadFactory media-type="xml">
+    <format>
+      <tempStructure>$1</tempStructure>
+    </format>
+    <args>
+      <arg evaluator="xml" expression="get-property('responseCrossRef')"/>
+    </args>
+  </payloadFactory>
+  <log level="custom">
+    <property expression="fn:concat('Proceeding for BFO Query Calls:',get-property('operation','correlationId'))" name="logText"/>
+  </log>
+  <property
+    expression="concat('select Id, Name, Phone,Type, Fax,ZipCode__c, POBoxZip__c,Website, CurrencyIsoCode,ClassLevel1__c,ClassLevel2__c, MarketSegment__c, MarketSubSegment__c, Owner.Name, Ownership,SDHGoldenVersion__c, SEAccountID__c, LeadingBusiness__c, VATNumber__c,RecordType.Name, RecordType.DeveloperName ,POBox__c, OwnerId FROM Account where Id =',get-property('singleQuote'),//*[local-name()='getCrossReferenceResponse']/*[local-name()='target'][*[local-name()='publisherCode']='BFO']/*[local-name()='id']/text(),get-property('singleQuote'))"
+    name="queryString" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <log level="custom">
+    <property expression="$ctx:queryString" name="***BFO Query String***"/>
+  </log>
+  <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder BFO Query Request"/>
+  <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+  <!--   <header expression="concat('Bearer ',get-property('accessToken'))" name="Authorization" scope="transport" xmlns:ns="http://org.apache.synapse/xsd"/> -->
+  <salesforcerest.query>
+    <queryString>{$ctx:queryString}</queryString>
+  </salesforcerest.query>
+  <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder BFO Query Response"/>
+  <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+  <property expression="$body/*" name="responseBFO" scope="default"
+    type="OM" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <enrich>
+    <source clone="true" property="incmngRequest" type="property"/>
+    <target type="body"/>
+  </enrich>
+  <property
+    expression="//*[local-name()='ZSHPORD']/*[local-name()='IDOC']/*[local-name()='E1EDL20']/*[local-name()='VBELN']/text()"
+    name="fileName" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <property
+    expression="//*[local-name()='ZSHPORD']/*[local-name()='IDOC']/*[local-name()='EDI_DC40']/*[local-name()='DOCNUM']/text()"
+    name="IDOCNumber" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <property
+    expression="string(concat(substring(//*[local-name()='ZSHPORD']/*[local-name()='IDOC']/*[local-name()='E1EDL20']/*[local-name()='E1EDT13']/*[local-name()='NTEND'],1,4),'-',substring(//*[local-name()='ZSHPORD']/*[local-name()='IDOC']/*[local-name()='E1EDL20']/*[local-name()='E1EDT13']/*[local-name()='NTEND'],5,2),'-',substring(//*[local-name()='ZSHPORD']/*[local-name()='IDOC']/*[local-name()='E1EDL20']/*[local-name()='E1EDT13']/*[local-name()='NTEND'],7,2)))"
+    name="maintainanceDate" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <property name="GetPartNumbersQueryToValidatePartNumberResponseList1" scope="default">
+    <getPartNumbersQueryToValidatePartNumberResponseList/>
+  </property>
+  <property name="GetMaintenanceQueryResponseList1" scope="default">
+    <getMaintenanceQueryResponseList/>
+  </property>
+  <property name="GetProductRelationshipsResponseList1" scope="default">
+    <getProductRelationshipsResponseList/>
+  </property>
+  <property name="GetPartNumbersQueryResponseList1" scope="default">
+    <getPartNumbersQueryResponseList/>
+  </property>
+  <property
+    name="GetPartNumbersQueryForMaintainanceRenewalResponseList1" scope="default">
+    <getPartNumbersQueryForMaintainanceRenewalResponseList/>
+  </property>
+  <property
+    expression="$ctx:GetPartNumbersQueryToValidatePartNumberResponseList1"
+    name="GetPartNumbersQueryToValidatePartNumberResponseList"
+    scope="axis2" type="OM" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <property expression="$ctx:GetMaintenanceQueryResponseList1"
+    name="GetMaintenanceQueryResponseList" scope="axis2" type="OM" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <property expression="$ctx:GetProductRelationshipsResponseList1"
+    name="GetProductRelationshipsResponseList" scope="axis2" type="OM" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <property expression="$ctx:GetPartNumbersQueryResponseList1"
+    name="GetPartNumbersQueryResponseList" scope="axis2" type="OM" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <property
+    expression="$ctx:GetPartNumbersQueryForMaintainanceRenewalResponseList1"
+    name="GetPartNumbersQueryForMaintainanceRenewalResponseList"
+    scope="axis2" type="OM" xmlns:ns="http://org.apache.synapse/xsd"/>
+  <log level="custom">
+    <property expression="fn:concat('E1EDL24 Structure Formation:',get-property('operation','correlationId'))" name="logText"/>
+  </log>
+  <iterate continueParent="true"
+    expression="//*[local-name()='ZSHPORD']/*[local-name()='IDOC']/*[local-name()='E1EDL20']/*[local-name()='E1EDL24']"
+    id="iterateE1EDL24" sequential="true" xmlns:ns="http://org.apache.synapse/xsd">
+    <target>
+      <sequence>
+        <property expression="$body/*" name="incmngE1EDL24"
+          scope="default" type="OM"/>
+        <property name="partIdA" scope="axis2">
+          <getPartId xmlns=""/>
+        </property>
+        <property expression="$axis2:partIdA" name="partId"
+          scope="default" type="OM"/>
+        <property name="randomNumberA" scope="axis2">
+          <rn xmlns="">
+            <randomNumber/>
+          </rn>
+        </property>
+        <property expression="$axis2:randomNumberA" name="randomNumber"
+          scope="default" type="OM"/>
+        <script language="js"><![CDATA[var x = Math.floor((Math.random() * 100000000) + 1);
+					              mc.setProperty('randomNumberB',x.toString());]]></script>
+        <enrich>
+          <source clone="true" property="randomNumberB" type="property"/>
+          <target xpath="$ctx:randomNumber//randomNumber"/>
+        </enrich>
+        <enrich>
+          <source clone="true" xpath="//*[local-name()='MATNR']"/>
+          <target action="child" xpath="$ctx:partId"/>
+        </enrich>
+		<enrich>
+          <source clone="true" xpath="//*[local-name()='POSNR']"/>
+          <target action="child" xpath="$ctx:partId"/>
+        </enrich>
+        <filter regex="false" source="boolean(//*[local-name()='E1TXTH9']/*[local-name()='E1TXTP9']/*[local-name()='TDLINE'][contains(text(),'ENT')])">
+          <then>
+            <log level="custom">
+               <property expression="fn:concat('Proceeding for GetPartNumberQuery Calls:',get-property('operation','correlationId'))" name="logText"/>
+            </log>
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <xslt key="gov:xslts/ProcessSNBOrder/1.0/GetPartNumberQuery_Request.xslt">
+              <property expression="get-property('searchType')" name="searchType"/>
+              <property expression="get-property('pageNumber')" name="pageNumber"/>
+              <property expression="get-property('batchSize')" name="batchSize"/>
+            </xslt>
+            <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder GetPartNumbersQueryToValidate Request"/>
+            <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <property name="ContentType" scope="axis2" type="STRING" value="application/xml"/>
+            <header name="Action" scope="default" value="getPartNumberQuery"/>
+            <property name="SOAPAction" scope="transport" type="STRING" value="getPartNumberQuery"/>
+            <header name="HTTP_METHOD" scope="transport" value="POST"/>
+            <header name="NO_KEEPALIVE" scope="transport" value="true"/>
+            <property expression="concat('Bearer ',$ctx:Token)"
+              name="Authorization" scope="transport" type="STRING"/>
+            <property expression="'soap/gse/ProductPackagingService/1.0'"
+              name="getURL" scope="default" type="STRING"/>
+            <property expression="get-property('getURL')"
+              name="uri.var.serviceName" scope="default" type="STRING"/>
+            <property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+            <property action="remove" name="Accept-Encoding" scope="transport"/>
+            <call blocking="true">
+              <endpoint key="APIM_REST_Endpoint"/>
+            </call>
+            <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder GetPartNumbersQueryToValidate Response"/>
+            <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+            <enrich>
+              <source clone="true" xpath="$body/*"/>
+              <target action="child" xpath="$axis2:GetPartNumbersQueryToValidatePartNumberResponseList"/>
+            </enrich>
+            <property
+              expression="$axis2:GetPartNumbersQueryToValidatePartNumberResponseList"
+              name="GetPartNumbersQueryToValidatePartNumberResponseList2"
+              scope="operation" type="OM"/>
+            <enrich>
+              <source clone="true" property="incmngE1EDL24" type="property"/>
+              <target type="body"/>
+            </enrich>
+            <log level="custom">
+               <property expression="fn:concat('Proceeding for GetMaintenanceQuery Calls:',get-property('operation','correlationId'))" name="logText"/>
+            </log>
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <xslt key="gov:xslts/ProcessSNBOrder/1.0/GetMaintenanceQuery_Request.xslt">
+              <property expression="get-property('searchType1')" name="searchType"/>
+              <property expression="get-property('pageNumber1')" name="pageNumber"/>
+              <property expression="get-property('batchSize1')" name="batchSize"/>
+            </xslt>
+            <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder GetMaintenanceQuery Request"/>
+            <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <property name="ContentType" scope="axis2" type="STRING" value="application/xml"/>
+            <header name="Action" scope="default" value="getMaintenanceQuery"/>
+            <property name="SOAPAction" scope="transport" type="STRING" value="getMaintenanceQuery"/>
+            <header name="HTTP_METHOD" scope="transport" value="POST"/>
+            <header name="NO_KEEPALIVE" scope="transport" value="true"/>
+            <property expression="concat('Bearer ',$ctx:Token)"
+              name="Authorization" scope="transport" type="STRING"/>
+            <property expression="'soap/gse/ProductPackagingService/1.0'"
+              name="getURL" scope="default" type="STRING"/>
+            <property expression="get-property('getURL')"
+              name="uri.var.serviceName" scope="default" type="STRING"/>
+            <property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+            <property action="remove" name="Accept-Encoding" scope="transport"/>
+            <call blocking="true">
+              <endpoint key="APIM_REST_Endpoint"/>
+            </call>
+            <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder GetMaintenanceQuery Response"/>
+            <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+            <enrich>
+              <source clone="true" xpath="$ctx:randomNumber//randomNumber"/>
+              <target action="child" xpath="//*[local-name()='getMaintenanceQueryResponse']"/>
+            </enrich>
+            <enrich>
+              <source clone="true" xpath="$ctx:partId/*[local-name()='MATNR']"/>
+              <target action="child" xpath="//*[local-name()='getMaintenanceQueryResponse']"/>
+            </enrich>
+			<enrich>
+              <source clone="true" xpath="$ctx:partId/*[local-name()='POSNR']"/>
+              <target action="child" xpath="//*[local-name()='getMaintenanceQueryResponse']"/>
+            </enrich>
+            <enrich>
+              <source clone="true" xpath="$body/*"/>
+              <target action="child" xpath="$axis2:GetMaintenanceQueryResponseList"/>
+            </enrich>
+            <property
+              expression="$axis2:GetMaintenanceQueryResponseList"
+              name="GetMaintenanceQueryResponseList2" scope="operation" type="OM"/>
+            <log level="custom">
+               <property expression="fn:concat('Proceeding for GetProductRelationships Calls:',get-property('operation','correlationId'))" name="logText"/>
+            </log>
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <xslt key="gov:xslts/ProcessSNBOrder/1.0/GetProductRelationships_Request.xslt">
+              <property expression="get-property('name')" name="name"/>
+              <property expression="get-property('version')" name="version"/>
+            </xslt>
+            <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder GetProductRelationships Request"/>
+            <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <property name="ContentType" scope="axis2" type="STRING" value="application/xml"/>
+            <header name="Action" scope="default" value="getProductRelationships"/>
+            <property name="SOAPAction" scope="transport" type="STRING" value="getProductRelationships"/>
+            <header name="HTTP_METHOD" scope="transport" value="POST"/>
+            <header name="NO_KEEPALIVE" scope="transport" value="true"/>
+            <property expression="concat('Bearer ',$ctx:Token)"
+              name="Authorization" scope="transport" type="STRING"/>
+            <property expression="'soap/gse/ProductPackagingService/1.0'"
+              name="getURL" scope="default" type="STRING"/>
+            <property expression="get-property('getURL')"
+              name="uri.var.serviceName" scope="default" type="STRING"/>
+            <property action="remove" name="Accept-Encoding" scope="transport"/>
+            <property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+            <call blocking="true">
+              <endpoint key="APIM_REST_Endpoint"/>
+            </call>
+            <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder GetProductRelationships Response"/>
+            <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+            <enrich>
+              <source clone="true" xpath="$ctx:partId/*[local-name()='MATNR']"/>
+              <target action="child" xpath="//*[local-name()='getProductRelationshipsResponse']"/>
+            </enrich>
+			<enrich>
+              <source clone="true" xpath="$ctx:partId/*[local-name()='POSNR']"/>
+              <target action="child" xpath="//*[local-name()='getProductRelationshipsResponse']"/>
+            </enrich>
+            <enrich>
+              <source clone="true" type="body"/>
+              <target action="child" xpath="$axis2:GetProductRelationshipsResponseList"/>
+            </enrich>
+            <property
+              expression="$axis2:GetProductRelationshipsResponseList"
+              name="GetProductRelationshipsResponseList2"
+              scope="operation" type="OM"/>
+            <log level="custom">
+               <property expression="fn:concat('Proceeding for GetPartNumberQueryCreation Calls:',get-property('operation','correlationId'))" name="logText"/>
+            </log>
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <xslt key="gov:xslts/ProcessSNBOrder/1.0/GetPartNumberQueryCreation_Request.xslt">
+              <property expression="get-property('searchType2')" name="searchType"/>
+              <property expression="get-property('pageNumber2')" name="pageNumber"/>
+              <property expression="get-property('batchSize2')" name="batchSize"/>
+            </xslt>
+            <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder GetPartNumberQueryCreation Request"/>
+            <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <property name="ContentType" scope="axis2" type="STRING" value="application/xml"/>
+            <header name="Action" scope="default" value="getPartNumberQuery"/>
+            <property name="SOAPAction" scope="transport" type="STRING" value="getPartNumberQuery"/>
+            <header name="HTTP_METHOD" scope="transport" value="POST"/>
+            <header name="NO_KEEPALIVE" scope="transport" value="true"/>
+            <property expression="concat('Bearer ',$ctx:Token)"
+              name="Authorization" scope="transport" type="STRING"/>
+            <property expression="'soap/gse/ProductPackagingService/1.0'"
+              name="getURL" scope="default" type="STRING"/>
+            <property expression="get-property('getURL')"
+              name="uri.var.serviceName" scope="default" type="STRING"/>
+            <property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+            <property action="remove" name="Accept-Encoding" scope="transport"/>
+            <call blocking="true">
+              <endpoint key="APIM_REST_Endpoint"/>
+            </call>
+            <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder GetPartNumberQueryCreation Response"/>
+            <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+            <enrich>
+              <source clone="true" xpath="$ctx:partId/*[local-name()='MATNR']"/>
+              <target action="child" xpath="//*[local-name()='getPartNumbersQueryResponse']"/>
+            </enrich>
+			<enrich>
+              <source clone="true" xpath="$ctx:partId/*[local-name()='POSNR']"/>
+              <target action="child" xpath="//*[local-name()='getPartNumbersQueryResponse']"/>
+            </enrich>
+            <enrich>
+              <source clone="true" xpath="$body/*"/>
+              <target action="child" xpath="$axis2:GetPartNumbersQueryResponseList"/>
+            </enrich>
+            <property
+              expression="$axis2:GetPartNumbersQueryResponseList"
+              name="GetPartNumbersQueryResponseList2" scope="operation" type="OM"/>
+            <property
+              expression="//*[local-name()='getPartNumbersQueryResponse']/*[local-name()='responseData']/*[local-name()='partNumber']/*[local-name()='partNumberIdentifier']/*[local-name()='primaryKeys']/*[local-name()='partId']/text()"
+              name="partId" scope="default" type="STRING"/>
+          </then>
+          <else>
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <xslt key="gov:xslts/ProcessSNBOrder/1.0/GetPartNumberQueryRenewal_Request.xslt">
+              <property expression="get-property('searchType3')" name="searchType"/>
+              <property expression="get-property('pageNumber3')" name="pageNumber"/>
+              <property expression="get-property('batchSize3')" name="batchSize"/>
+            </xslt>
+            <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder GetPartNumberQueryRenewal Request"/>
+            <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/xml"/>
+            <property name="ContentType" scope="axis2" type="STRING" value="application/xml"/>
+            <header name="Action" scope="default" value="getPartNumberQuery"/>
+            <property name="SOAPAction" scope="transport" type="STRING" value="getPartNumberQuery"/>
+            <header name="HTTP_METHOD" scope="transport" value="POST"/>
+            <header name="NO_KEEPALIVE" scope="transport" value="true"/>
+            <property expression="concat('Bearer ',$ctx:Token)"
+              name="Authorization" scope="transport" type="STRING"/>
+            <property expression="'soap/gse/ProductPackagingService/1.0'"
+              name="getURL" scope="default" type="STRING"/>
+            <property expression="get-property('getURL')"
+              name="uri.var.serviceName" scope="default" type="STRING"/>
+            <property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+            <property action="remove" name="Accept-Encoding" scope="transport"/>
+            <call blocking="true">
+              <endpoint key="APIM_REST_Endpoint"/>
+            </call>
+            <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder GetPartNumberQueryRenewal Response"/>
+            <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+            <enrich>
+              <source clone="true" xpath="$ctx:randomNumber//randomNumber"/>
+              <target action="child" xpath="//*[local-name()='getPartNumbersQueryResponse']"/>
+            </enrich>
+            <enrich>
+              <source clone="true" xpath="$ctx:partId/*[local-name()='MATNR']"/>
+              <target action="child" xpath="//*[local-name()='getPartNumbersQueryResponse']"/>
+            </enrich>
+			<enrich>
+              <source clone="true" xpath="$ctx:partId/*[local-name()='POSNR']"/>
+              <target action="child" xpath="//*[local-name()='getPartNumbersQueryResponse']"/>
+            </enrich>
+            <enrich>
+              <source clone="true" xpath="$body/*"/>
+              <target action="child" xpath="$axis2:GetPartNumbersQueryForMaintainanceRenewalResponseList"/>
+            </enrich>
+            <property
+              expression="$axis2:GetPartNumbersQueryForMaintainanceRenewalResponseList"
+              name="GetPartNumbersQueryForMaintainanceRenewalResponseList2"
+              scope="operation" type="OM"/>
+            <property
+              expression="//*[local-name()='getPartNumbersQueryResponse']/*[local-name()='responseData']/*[local-name()='partNumber']/*[local-name()='mappedProduct']/*[local-name()='primaryKeys']/*[local-name()='name']/text()"
+              name="name" scope="default" type="STRING"/>
+            <property
+              expression="//*[local-name()='getPartNumbersQueryResponse']/*[local-name()='responseData']/*[local-name()='partNumber']/*[local-name()='mappedProduct']/*[local-name()='primaryKeys']/*[local-name()='version']/text()"
+              name="version" scope="default" type="STRING"/>
+          </else>
+        </filter>
+      </sequence>
+    </target>
+  </iterate>
+  <log level="custom">
+     <property expression="fn:concat('Proceeding for Aggregated Structure:',get-property('operation','correlationId'))" name="logText"/>
+  </log>
+  <payloadFactory media-type="xml">
+    <format>
+      <AggregatedStructure xmlns="">$1
+				$2
+				$3
+				$4
+				$5
+				$6
+			</AggregatedStructure>
+    </format>
+    <args>
+      <arg evaluator="xml" expression="$ctx:incmngRequest" xmlns:ns="http://org.apache.synapse/xsd"/>
+      <arg evaluator="xml"
+        expression="get-property('operation','GetPartNumbersQueryToValidatePartNumberResponseList2')" xmlns:ns="http://org.apache.synapse/xsd"/>
+      <arg evaluator="xml"
+        expression="get-property('operation','GetMaintenanceQueryResponseList2')" xmlns:ns="http://org.apache.synapse/xsd"/>
+      <arg evaluator="xml"
+        expression="get-property('operation','GetProductRelationshipsResponseList2')" xmlns:ns="http://org.apache.synapse/xsd"/>
+      <arg evaluator="xml"
+        expression="get-property('operation','GetPartNumbersQueryResponseList2')" xmlns:ns="http://org.apache.synapse/xsd"/>
+      <arg evaluator="xml"
+        expression="get-property('operation','GetPartNumbersQueryForMaintainanceRenewalResponseList2')" xmlns:ns="http://org.apache.synapse/xsd"/>
+    </args>
+  </payloadFactory>
+  <property name="logText" scope="default" type="STRING" value="AggregatedStructure Structure"/>
+  <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+  <xslt key="gov:xslts/ProcessSNBOrder/1.0/StructureFormation.xslt"/>
+  <property name="logText" scope="default" type="STRING" value="ProcessSNBOrder Structure Formation Request"/>
+  <sequence key="gov:sequences/common/1.0/CommonLogger.xml"/>
+  <property
+    expression="substring(//*[local-name()='tempPartNumber']/text(),1,string-length(//*[local-name()='tempPartNumber']/text())-1)"
+    name="tempPartNumber" scope="default" type="STRING"/>
+  <filter xpath="//*[local-name()='faultyPartNumber'][contains(text(),'false')] or //*[local-name()='faultyPartNumberRenewal'][contains(text(),'false')]">
+    <then>
+      <log level="custom">
+         <property expression="fn:concat('Proceeding for Email No Part Number Exist:',get-property('operation','correlationId'))" name="logText"/>
+      </log>
+      <property
+        expression="get-property('SYSTEM_DATE', 'yyyy-MM-dd HH:mm:ss')"
+        name="DateTime" scope="default" type="STRING"/>
+      <property name="messageType" scope="axis2" type="STRING" value="text/html"/>
+      <property name="ContentType" scope="axis2" type="STRING" value="text/html"/>
+      <property name="OUT_ONLY" scope="default" type="STRING" value="true"/>
+      <property name="FORCE_SC_ACCEPTED" scope="axis2" type="STRING" value="true"/>
+      <property expression="get-property('subject')" name="Subject"
+        scope="transport" type="STRING"/>
+      <property expression="get-property('emailAddress')"
+        name="Recipient" scope="default" type="STRING"/>
+      <property
+        expression="concat(get-property('emailBody5'),get-property('emailBody6'),get-property('emailBody7'),get-property('emailBody8'),get-property('tempPartNumber'),get-property('IDOCNumber'),get-property('DateTime'))"
+        name="BodyStructure" scope="default" type="STRING"/>
+      <header
+        expression="fn:concat('mailto:',get-property('Recipient'))"
+        name="To" scope="default"/>
+      <log level="custom">
+        <property expression="get-property('To')" name="Email Recipient----"/>
+        <property expression="get-property('BodyStructure')" name="Email Body----"/>
+      </log>
+      <script language="js"><![CDATA[var emailBody5 = mc.getProperty('emailBody5');
+				var emailBody6 = mc.getProperty('emailBody6');
+				var emailBody7 = mc.getProperty('emailBody7');
+				var emailBody8 = mc.getProperty('emailBody8');
+				var tempPartNumber = mc.getProperty('tempPartNumber');
+				var IDOCNumber = mc.getProperty('IDOCNumber');
+				var DateTime = mc.getProperty('DateTime');
+				mc.setPayloadXML(<html>{emailBody5}<br /><br />{emailBody6}<br /><br />{emailBody7}<br /><br />{emailBody8} {IDOCNumber} and Part Number(s) - {tempPartNumber} and Timestamp - {DateTime}</html>);]]></script>
+      <property name="FORCE_CONTENT_TYPE_BASED_FORMATTER" scope="axis2"
+        type="STRING" value="true"/>
+      <send/>
+    </then>
+    <else>
+      <sequence key="ProcessSNBOrderSecondPartIn-1_0"/>
+    </else>
+  </filter>
+</sequence>

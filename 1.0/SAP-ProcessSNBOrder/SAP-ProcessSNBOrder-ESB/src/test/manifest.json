@@ -1,0 +1,24 @@
+{
+	"Deploy": {
+		"ESB": "true",
+		"APIM": "false"
+	},
+	"Region": [
+		"DEV"
+	],
+	"Rollback": "true",
+	"APIName": "SAP-ProcessSNBOrder",
+	"Version": "1.0",
+	"Artifacts": {
+		"ESB": "SAP-ProcessSNBOrder-ReleaseBundle-1.0.7.zip"
+	},
+	"ESBDependencies": {
+		"File": [{
+				"Name": "SAP-ProcessSNBOrder-CAR-1.0.7.car",
+				"Type": "CAR"
+
+			}
+
+		]
+	}
+}

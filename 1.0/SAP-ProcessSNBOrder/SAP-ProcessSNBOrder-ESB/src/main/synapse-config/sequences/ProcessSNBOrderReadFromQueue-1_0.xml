@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="ProcessSNBOrderReadFromQueue-1_0" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <sequence key="gov:sequences/common/1.0/IncomingRequestLogger.xml"/>
+    <sequence key="gov:sequences/common/1.0/IFWHeader.xml"/>
+    <log level="custom">
+        <property expression="fn:concat('Inside ProcessSNBOrderReadFromQueue-1_0 cor-id:',get-property('operation','correlationId'))" name="LogText" xmlns:ns="http://org.apache.synapse/xsd"/>
+        <property expression="get-property(&quot;SYSTEM_DATE&quot;, &quot;yyyy.MM.dd 'at' HH:mm:ss z&quot;)" name="TimeStamp" xmlns:ns="http://org.apache.synapse/xsd"/>
+        <property expression="$body" name="Req/ResBody" xmlns:ns="http://org.apache.synapse/xsd"/>
+    </log>
+    <property expression="get-property('operation','incomingRequest')" name="incmngRequest" scope="default" type="OM" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$trp:SAPSNB_RETRY_HEADER" name="SAPSNB_RETRY_HEADER" scope="operation" type="STRING"/>
+    <property expression="//*[local-name()='ZSHPORD']/*[local-name()='IDOC']/*[local-name()='EDI_DC40']/*[local-name()='DOCNUM']/text()" name="IDOCNumber" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="concat('ProcessSNBOder-RetryCount-',get-property('operation','SAPSNB_RETRY_HEADER'),'-',get-property('IDOCNumber'))" name="X-SE-IFW-RequestId" scope="transport" type="STRING" xmlns:ns="http://org.apache.synapse/xsd" />
+    <property expression="get-property('BMS_Config')" name="tokenConfig" scope="default" type="OM" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='objectType']" name="objectType" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='publisherCode']" name="publisherCode" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='target']/*[local-name()='targetPublisherCode1']" name="targetPublisherCode1" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='target']/*[local-name()='targetPublisherCode2']" name="targetPublisherCode2" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='target']/*[local-name()='flag']" name="flag" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getPartNumbersQuery']/*[local-name()='searchType']" name="searchType" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getPartNumbersQuery']/*[local-name()='pageNumber']" name="pageNumber" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getPartNumbersQuery']/*[local-name()='batchSize']" name="batchSize" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getMaintenanceQuery']/*[local-name()='searchType']" name="searchType1" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getMaintenanceQuery']/*[local-name()='pageNumber']" name="pageNumber1" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getMaintenanceQuery']/*[local-name()='batchSize']" name="batchSize1" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getProductRelationships']/*[local-name()='name']" name="name" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getProductRelationships']/*[local-name()='version']" name="version" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getPartNumbersQuerySecond']/*[local-name()='searchType']" name="searchType2" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getPartNumbersQuerySecond']/*[local-name()='pageNumber']" name="pageNumber2" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getPartNumbersQuerySecond']/*[local-name()='batchSize']" name="batchSize2" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getPartNumbersQueryRenewal']/*[local-name()='searchType']" name="searchType3" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getPartNumbersQueryRenewal']/*[local-name()='pageNumber']" name="pageNumber3" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getPartNumbersQueryRenewal']/*[local-name()='batchSize']" name="batchSize3" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='typePartner']" name="typePartner" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='SourceAccountType']" name="SourceAccountType" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='sourceSystem']" name="sourceSystem" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='accountType']" name="accountType" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='deviceFlag']" name="deviceFlag" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='flag']" name="flag" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='accountTypeBFO']" name="accountTypeBFO" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='SEWorkIDAccOwner']" name="SEWorkIDAccOwner" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='email']/*[local-name()='subject']" name="subject" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='email']/*[local-name()='subject1']" name="subject1" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='emailBody1']" name="emailBody1" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='emailBody2']" name="emailBody2" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='emailBody3']" name="emailBody3" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='emailBody4']" name="emailBody4" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='emailBody5']" name="emailBody5" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='emailBody6']" name="emailBody6" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='emailBody7']" name="emailBody7" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='emailBody8']" name="emailBody8" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='email']/*[local-name()='emailMessage1']" name="emailMessage1" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='email']/*[local-name()='emailMessage2']" name="emailMessage2" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='email']/*[local-name()='emailAddress']" name="emailAddress" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='ftp']/*[local-name()='host']" name="host" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='ftp']/*[local-name()='userId']" name="userId" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='ftp']/*[local-name()='password']" name="password" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='ftp']/*[local-name()='targetDir']" name="targetDir" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getUsersQuery']/*[local-name()='searchType']" name="searchType4" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getUsersQuery']/*[local-name()='orgType']" name="orgType4" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getUsersQuery']/*[local-name()='pageNumber']" name="pageNumber4" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='getUsersQuery']/*[local-name()='batchSize']" name="batchSize4" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='emailEntitlement']/*[local-name()='ignoreExistingEmailList']" name="ignoreExistingEmailList" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='emailEntitlement']/*[local-name()='ignoreExistingEmailList1']" name="ignoreExistingEmailList1" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='emailBody']" name="emailBody" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='emailBody1']" name="emailBody1" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='email']/*[local-name()='subject1']" name="subject1" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='ProcessSNBOrder']/*[local-name()='retryCount']" name="retryCount" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig//*[local-name()='autoDeploy']" name="autoDeploy" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="get-property('BFO-TokenConfig')" name="tokenConfig1" scope="default" type="OM"/>
+    <property expression="$ctx:tokenConfig1//*[local-name()='apiUrl']" name="apiUrl" scope="operation" type="STRING"/>
+    <property expression="$ctx:tokenConfig1//*[local-name()='operationUrl']" name="salesforce.serviceUrl" scope="operation" type="STRING"/>
+    <property expression="$ctx:tokenConfig1//*[local-name()='hostName']" name="hostName" scope="default" type="STRING"/>
+    <property expression="get-property('OAuth-TokenConfig')" name="tokenConfig2" scope="default" type="OM" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <property expression="$ctx:tokenConfig2//*[local-name()='OAuth']" name="Token" scope="default" type="STRING" xmlns:ns="http://org.apache.synapse/xsd"/>
+    <sequence description="" key="ProcessSNBOrderIn-1_0"/>
+</sequence>
